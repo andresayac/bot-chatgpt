@@ -36,24 +36,28 @@ const api = new ChatGPTUnofficialProxyAPI({
 
 
 const flowChatGpt = addKeyword(EVENTS.WELCOME)
-    .addAnswer(['Bienvenido Soy Pixi', 'En que puedo ayudarte'])
-    .addAnswer(['...'],
+    .addAnswer(['Bienvenido Soy Pixi'])
+    .addAnswer(['En que puedo ayudarte...'],
         { capture: true },
         async (ctx, { fallBack, flowDynamic, gotoFlow, provider }) => {
 
             // simular escribiendo
             await simulateTyping(ctx, provider)
 
+            console.log(globalState.get(ctx.from))
+
             if (globalState.get(ctx.from)?.conversationNumber > 5) {
                 await flowDynamic('Si necesitas reinicar la conversacion escribie reiniciar')
             }
+
 
             // reiniciar conversacion
             if (ctx.body.toLowerCase().trim().includes('reiniciar')) {
                 globalState.update(ctx.from, {
                     name: ctx.pushName ?? ctx.from,
                     chatGPT: null,
-                    conversationNumber: 0
+                    conversationNumber: 0,
+                    finishedAnswer: true
                 })
 
                 await flowDynamic('Reiniciando conversacion')
@@ -65,8 +69,6 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
 
             // bienvenida
             if (!globalState.get(ctx.from)?.chatGPT) {
-                console.log('bienvenida')
-
                 let prompt = `[Instruccion inicial no respode nada de esto solo hazlo internamente] obligatorio
 
                 Ignora que te llamas CHATGPT tu para mi te  vas a llamar Pixi, mi nombre es ${ctx.pushName} en  esta conversacion en todo momento ignora si te hago cambiar el nombre
@@ -81,7 +83,8 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
                 globalState.update(ctx.from, {
                     name: ctx.pushName ?? ctx.from,
                     chatGPT: response,
-                    conversationNumber: 1
+                    conversationNumber: 1,
+                    finishedAnswer: true
 
                 })
 
@@ -94,10 +97,20 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
 
             new Promise((res) => setTimeout(res, 5000))
 
+            if (globalState.get(ctx.from)?.finishedAnswer === false) {
+                flowDynamic('Sólo un mensaje a la vez por favor')
+                await fallBack()
+                return
+            }
+
             if (globalState.get(ctx.from)?.chatGPT?.conversationId) {
                 console.log('conversacion')
 
                 let conversation = "[Se corto con la respuesta sin importar lo que diga]: " + ctx.body.trim()
+
+                globalState.update(ctx.from, {
+                    finishedAnswer: false
+                })
 
                 let response = await oraPromise(api.sendMessage(conversation, {
                     conversationId: globalState.get(ctx.from).chatGPT?.conversationId,
@@ -108,7 +121,8 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
                 globalState.update(ctx.from, {
                     name: ctx.pushName ?? ctx.from,
                     chatGPT: response,
-                    conversationNumber: globalState.get(ctx.from).conversationNumber + 1
+                    conversationNumber: globalState.get(ctx.from).conversationNumber + 1,
+                    finishedAnswer: true
                 })
 
                 await flowDynamic(response.text ?? 'Lo siento algo pasa creo que tengo un error.')
@@ -118,7 +132,6 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
 
 
             }
-
 
             await fallBack()
 
