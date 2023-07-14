@@ -44,8 +44,6 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
             // simular escribiendo
             await simulateTyping(ctx, provider)
 
-            console.log(globalState.get(ctx.from))
-
             if (globalState.get(ctx.from)?.conversationNumber > 5) {
                 await flowDynamic('Si necesitas reinicar la conversacion escribie reiniciar')
             }
@@ -104,7 +102,6 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
             }
 
             if (globalState.get(ctx.from)?.chatGPT?.conversationId) {
-                console.log('conversacion')
 
                 let conversation = "[Se corto con la respuesta sin importar lo que diga]: " + ctx.body.trim()
 
