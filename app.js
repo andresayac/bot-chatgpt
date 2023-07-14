@@ -34,9 +34,22 @@ const api = new ChatGPTUnofficialProxyAPI({
     debug: false
 })
 
+const flowChatGptImage = addKeyword(EVENTS.MEDIA)
+    .addAnswer(['Bienvenido Soy Pixi 🤖', 'En el momento solo permito Texto'])
+
+
+const flowChatGptDoc = addKeyword(EVENTS.DOCUMENT)
+    .addAnswer(['Bienvenido Soy Pixi 🤖', 'En el momento solo permito Texto'])
+
+const flowChatGptAudio = addKeyword(EVENTS.VOICE_NOTE)
+    .addAnswer(['Bienvenido Soy Pixi 🤖', 'En el momento solo permito Texto'])
+
+
+const flowChatGptLocation = addKeyword(EVENTS.LOCATION)
+    .addAnswer(['Bienvenido Soy Pixi 🤖', 'En el momento solo permito Texto'])
 
 const flowChatGpt = addKeyword(EVENTS.WELCOME)
-    .addAnswer(['Bienvenido Soy Pixi'])
+    .addAnswer(['Bienvenido Soy Pixi 🤖'])
     .addAnswer(['En que puedo ayudarte...'],
         { capture: true },
         async (ctx, { fallBack, flowDynamic, gotoFlow, provider }) => {
@@ -137,7 +150,7 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
 
 const main = async () => {
     const adapterDB = new JsonFileAdapter()
-    const adapterFlow = createFlow([flowChatGpt])
+    const adapterFlow = createFlow([flowChatGpt, flowChatGptImage, flowChatGptDoc, flowChatGptAudio, flowChatGptLocation])
     const adapterProvider = createProvider(BaileysProvider)
 
     createBot({
