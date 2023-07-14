@@ -1,0 +1,8 @@
+.env
+node_modules
+db.json
+*_sessions
+state.json
+core.class.log
+baileys.log
+bot.qr.png

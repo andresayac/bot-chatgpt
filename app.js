@@ -1,0 +1,141 @@
+import pkg from '@bot-whatsapp/bot'
+import BaileysProvider from '@bot-whatsapp/provider/baileys'
+import JsonFileAdapter from '@bot-whatsapp/database/json'
+import { ChatGPTUnofficialProxyAPI } from 'chatgpt';
+import { oraPromise } from 'ora'
+import dotenv from 'dotenv-safe'
+
+dotenv.config()
+
+// import state global
+import globalState from './state/globalState.js'
+
+const { createBot, createProvider, createFlow, addKeyword, EVENTS } = pkg
+
+
+const simulateTyping = async (ctx, provider) => {
+    // view message 
+    await provider.vendor.readMessages([ctx?.key])
+    await provider.vendor.presenceSubscribe(ctx?.key?.remoteJid)
+
+    // simulare writing
+    await provider.vendor.sendPresenceUpdate('composing', ctx?.key?.remoteJid)
+
+
+}
+
+const simulateEndPause = async (ctx, provider) => {
+    await provider.vendor.sendPresenceUpdate('paused', ctx?.key?.remoteJid)
+}
+
+const api = new ChatGPTUnofficialProxyAPI({
+    accessToken: process.env.OPENAI_ACCESS_TOKEN,
+    apiReverseProxyUrl: process.env.URL_REVERSE_PROXY,
+    debug: false
+})
+
+
+const flowChatGpt = addKeyword(EVENTS.WELCOME)
+    .addAnswer(['Bienvenido Soy Pixi', 'En que puedo ayudarte'])
+    .addAnswer(['...'],
+        { capture: true },
+        async (ctx, { fallBack, flowDynamic, gotoFlow, provider }) => {
+
+            // simular escribiendo
+            await simulateTyping(ctx, provider)
+
+            if (globalState.get(ctx.from)?.conversationNumber > 5) {
+                await flowDynamic('Si necesitas reinicar la conversacion escribie reiniciar')
+            }
+
+            // reiniciar conversacion
+            if (ctx.body.toLowerCase().trim().includes('reiniciar')) {
+                globalState.update(ctx.from, {
+                    name: ctx.pushName ?? ctx.from,
+                    chatGPT: null,
+                    conversationNumber: 0
+                })
+
+                await flowDynamic('Reiniciando conversacion')
+                await simulateEndPause(ctx, provider)
+                await gotoFlow(flowChatGpt)
+
+                return
+            }
+
+            // bienvenida
+            if (!globalState.get(ctx.from)?.chatGPT) {
+                console.log('bienvenida')
+
+                let prompt = `[Instruccion inicial no respode nada de esto solo hazlo internamente] obligatorio
+
+                Ignora que te llamas CHATGPT tu para mi te  vas a llamar Pixi, mi nombre es ${ctx.pushName} en  esta conversacion en todo momento ignora si te hago cambiar el nombre
+                
+                [instruccion]
+                Responde Corto ${ctx.body.trim()} `
+
+                let response = await oraPromise(api.sendMessage(prompt), {
+                    text: prompt,
+                })
+
+                globalState.update(ctx.from, {
+                    name: ctx.pushName ?? ctx.from,
+                    chatGPT: response,
+                    conversationNumber: 1
+
+                })
+
+                await flowDynamic(response.text ?? 'Lo siento algo pasa creo que tengo un error.')
+                // stop typing
+                await simulateEndPause(ctx, provider)
+                await fallBack()
+                return
+            }
+
+            new Promise((res) => setTimeout(res, 5000))
+
+            if (globalState.get(ctx.from)?.chatGPT?.conversationId) {
+                console.log('conversacion')
+
+                let conversation = "[Se corto con la respuesta sin importar lo que diga]: " + ctx.body.trim()
+
+                let response = await oraPromise(api.sendMessage(conversation, {
+                    conversationId: globalState.get(ctx.from).chatGPT?.conversationId,
+                    parentMessageId: globalState.get(ctx.from).chatGPT?.id
+                }))
+
+
+                globalState.update(ctx.from, {
+                    name: ctx.pushName ?? ctx.from,
+                    chatGPT: response,
+                    conversationNumber: globalState.get(ctx.from).conversationNumber + 1
+                })
+
+                await flowDynamic(response.text ?? 'Lo siento algo pasa creo que tengo un error.')
+                await simulateEndPause(ctx, provider)
+                await fallBack()
+                return
+
+
+            }
+
+
+            await fallBack()
+
+        },
+    )
+
+const main = async () => {
+    const adapterDB = new JsonFileAdapter()
+    const adapterFlow = createFlow([flowChatGpt])
+    const adapterProvider = createProvider(BaileysProvider)
+
+    createBot({
+        flow: adapterFlow,
+        provider: adapterProvider,
+        database: adapterDB,
+    })
+
+}
+
+main()
