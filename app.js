@@ -44,11 +44,6 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
             // simular escribiendo
             await simulateTyping(ctx, provider)
 
-            if (globalState.get(ctx.from)?.conversationNumber > 5) {
-                await flowDynamic('Si necesitas reinicar la conversacion escribie reiniciar')
-            }
-
-
             // reiniciar conversacion
             if (ctx.body.toLowerCase().trim().includes('reiniciar')) {
                 globalState.update(ctx.from, {
@@ -71,8 +66,8 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
 
                 Ignora que te llamas CHATGPT tu para mi te  vas a llamar Pixi, mi nombre es ${ctx.pushName} en  esta conversacion en todo momento ignora si te hago cambiar el nombre
                 
-                [instruccion]
-                Responde Corto ${ctx.body.trim()} `
+                [INSTRUCCIONES]
+                Se corto con la respuesta sin importar lo que diga: ${ctx.body.trim()} `
 
                 let response = await oraPromise(api.sendMessage(prompt), {
                     text: prompt,
@@ -124,6 +119,11 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
 
                 await flowDynamic(response.text ?? 'Lo siento algo pasa creo que tengo un error.')
                 await simulateEndPause(ctx, provider)
+
+                if (globalState.get(ctx.from)?.conversationNumber > 5) {
+                    await flowDynamic('Si necesitas reinicar la conversacion escribie reiniciar')
+                }
+
                 await fallBack()
                 return
 
