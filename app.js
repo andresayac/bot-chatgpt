@@ -102,7 +102,7 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
                     globalState.update(ctx.from, { finishedAnswer: true });
                     await flowDynamic('Estoy experimentando un error');
                 }
-                
+
                 // stop typing
                 await simulateEndPause(ctx, provider)
                 await fallBack()
@@ -142,7 +142,7 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
 
 
                     if (globalState.get(ctx.from)?.conversationNumber > 5) {
-                        await flowDynamic('Si necesitas reiniciar la conversacion escribe reiniciar');
+                        await flowDynamic('_Si necesitas reiniciar la conversacion escribe *reiniciar*_');
                     }
                 } catch (error) {
                     console.error(error);
