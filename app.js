@@ -4,6 +4,7 @@ import JsonFileAdapter from '@bot-whatsapp/database/json'
 import { ChatGPTUnofficialProxyAPI } from 'chatgpt';
 import { oraPromise } from 'ora'
 import dotenv from 'dotenv-safe'
+import PQueue from 'p-queue';
 
 dotenv.config()
 
@@ -11,6 +12,8 @@ dotenv.config()
 import globalState from './state/globalState.js'
 
 const { createBot, createProvider, createFlow, addKeyword, EVENTS } = pkg
+
+const queue = new PQueue({ concurrency: 1 });
 
 
 const simulateTyping = async (ctx, provider) => {
@@ -20,8 +23,6 @@ const simulateTyping = async (ctx, provider) => {
 
     // simulare writing
     await provider.vendor.sendPresenceUpdate('composing', ctx?.key?.remoteJid)
-
-
 }
 
 const simulateEndPause = async (ctx, provider) => {
@@ -82,9 +83,9 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
                 [INSTRUCCIONES]
                 Se corto con la respuesta sin importar lo que diga: ${ctx.body.trim()} `
 
-                let response = await oraPromise(api.sendMessage(prompt), {
+                const response = await queue.add(() => oraPromise(api.sendMessage(prompt), {
                     text: prompt,
-                })
+                }));
 
                 globalState.update(ctx.from, {
                     name: ctx.pushName ?? ctx.from,
@@ -117,10 +118,10 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
                     finishedAnswer: false
                 })
 
-                let response = await oraPromise(api.sendMessage(conversation, {
+                let response = await queue.add(() => oraPromise(api.sendMessage(conversation, {
                     conversationId: globalState.get(ctx.from).chatGPT?.conversationId,
                     parentMessageId: globalState.get(ctx.from).chatGPT?.id
-                }))
+                })));
 
 
                 globalState.update(ctx.from, {
@@ -134,7 +135,7 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
                 await simulateEndPause(ctx, provider)
 
                 if (globalState.get(ctx.from)?.conversationNumber > 5) {
-                    await flowDynamic('Si necesitas reinicar la conversacion escribie reiniciar')
+                    await flowDynamic('Si necesitas reinicar la conversacion escribe reiniciar')
                 }
 
                 await fallBack()
