@@ -83,19 +83,26 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
                 [INSTRUCCIONES]
                 Se corto con la respuesta sin importar lo que diga: ${ctx.body.trim()} `
 
-                const response = await queue.add(() => oraPromise(api.sendMessage(prompt), {
-                    text: prompt,
-                }));
+                try {
+                    const response = await queue.add(() => oraPromise(api.sendMessage(prompt), {
+                        text: prompt,
+                    }));
 
-                globalState.update(ctx.from, {
-                    name: ctx.pushName ?? ctx.from,
-                    chatGPT: response,
-                    conversationNumber: 1,
-                    finishedAnswer: true
+                    globalState.update(ctx.from, {
+                        name: ctx.pushName ?? ctx.from,
+                        chatGPT: response,
+                        conversationNumber: 1,
+                        finishedAnswer: true
 
-                })
+                    })
 
-                await flowDynamic(response.text ?? 'Lo siento algo pasa creo que tengo un error.')
+                    await flowDynamic(response.text ?? 'Lo siento algo pasa creo que tengo un error.')
+                } catch (error) {
+                    console.error(error);
+                    globalState.update(ctx.from, { finishedAnswer: true });
+                    await flowDynamic('Estoy experimentando un error');
+                }
+                
                 // stop typing
                 await simulateEndPause(ctx, provider)
                 await fallBack()
@@ -118,26 +125,32 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
                     finishedAnswer: false
                 })
 
-                let response = await queue.add(() => oraPromise(api.sendMessage(conversation, {
-                    conversationId: globalState.get(ctx.from).chatGPT?.conversationId,
-                    parentMessageId: globalState.get(ctx.from).chatGPT?.id
-                })));
+                try {
+                    let response = await queue.add(() => oraPromise(api.sendMessage(conversation, {
+                        conversationId: globalState.get(ctx.from).chatGPT?.conversationId,
+                        parentMessageId: globalState.get(ctx.from).chatGPT?.id
+                    })));
+
+                    globalState.update(ctx.from, {
+                        name: ctx.pushName ?? ctx.from,
+                        chatGPT: response,
+                        conversationNumber: globalState.get(ctx.from).conversationNumber + 1,
+                        finishedAnswer: true
+                    });
+
+                    await flowDynamic(response.text ?? 'Lo siento algo pasa creo que tengo un error.');
 
 
-                globalState.update(ctx.from, {
-                    name: ctx.pushName ?? ctx.from,
-                    chatGPT: response,
-                    conversationNumber: globalState.get(ctx.from).conversationNumber + 1,
-                    finishedAnswer: true
-                })
-
-                await flowDynamic(response.text ?? 'Lo siento algo pasa creo que tengo un error.')
-                await simulateEndPause(ctx, provider)
-
-                if (globalState.get(ctx.from)?.conversationNumber > 5) {
-                    await flowDynamic('Si necesitas reinicar la conversacion escribe reiniciar')
+                    if (globalState.get(ctx.from)?.conversationNumber > 5) {
+                        await flowDynamic('Si necesitas reiniciar la conversacion escribe reiniciar');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    globalState.update(ctx.from, { finishedAnswer: true });
+                    await flowDynamic('Estoy experimentando un error en este momento, por favor intente nuevamente más tarde.');
                 }
 
+                await simulateEndPause(ctx, provider);
                 await fallBack()
                 return
 
