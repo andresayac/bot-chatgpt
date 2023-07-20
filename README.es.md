@@ -12,6 +12,10 @@ Este chatbot utiliza la versión gratuita de ChatGPT a través de ingeniería in
 
 Por defecto, el bot está configurado en inglés. Si deseas cambiar el idioma, puedes hacerlo modificando la variable `LANGUAGE_BOT` en el archivo `.env` a tu idioma deseado. Por ejemplo, para español, configurarías `LANGUAGE_BOT=es`.
 
+## URL del Proxy Inverso
+
+Antes de obtener el token de acceso, asegúrate de configurar la `URL_REVERSE_PROXY` en el archivo `.env`. Puedes usar los proxies inversos listados en la biblioteca utilizada como referencia: [default](https://github.com/transitive-bullshit/chatgpt-api#reverse-proxy)
+
 ## Obtención del Token de Acceso
 
 Para completar el archivo `.env`, necesitarás obtener un token de acceso. Puedes obtener un token de acceso manualmente iniciando sesión en la aplicación web de ChatGPT y luego abriendo [https://chat.openai.com/api/auth/session](https://chat.openai.com/api/auth/session), que devolverá un objeto JSON que contiene tu cadena de token de acceso.

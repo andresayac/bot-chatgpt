@@ -14,6 +14,10 @@ This chatbot utilizes the free version of ChatGPT through reverse engineering to
 
 By default, the bot is set to English. If you want to change the language, you can do so by changing the `LANGUAGE_BOT` variable in the `.env` file to your desired language. For example, for Spanish, you would set `LANGUAGE_BOT=es`.
 
+## Reverse Proxy URL
+
+Before obtaining the access token, make sure to set the `URL_REVERSE_PROXY` in the `.env` file. You can use the reverse proxies listed in the used library as a reference: [default](https://github.com/transitive-bullshit/chatgpt-api#reverse-proxy)
+
 ## Obtaining Access Token
 
 To complete the `.env` file, you will need to obtain an access token. You can manually get an access token by logging in to the ChatGPT webapp and then opening [https://chat.openai.com/api/auth/session](https://chat.openai.com/api/auth/session), which will return a JSON object containing your access token string.
