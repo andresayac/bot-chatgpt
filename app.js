@@ -11,6 +11,15 @@ dotenv.config()
 // import state global
 import globalState from './state/globalState.js'
 
+// import languajes
+import languajes from './languajes.js'
+
+const languaje_bot = languajes[process.env.LANGUAJE_BOT] ?? languajes['en']
+
+console.log(`Languaje bot: ${process.env.LANGUAJE_BOT}`)
+console.log(`Languaje bot: ${languaje_bot}`)
+console.log(`Languaje bot: ${languaje_bot['welcome']}`)
+
 const { createBot, createProvider, createFlow, addKeyword, EVENTS } = pkg
 
 const queue = new PQueue({ concurrency: 1 });
@@ -36,22 +45,22 @@ const api = new ChatGPTUnofficialProxyAPI({
 })
 
 const flowChatGptImage = addKeyword(EVENTS.MEDIA)
-    .addAnswer(['Bienvenido Soy Pixi 🤖', 'En el momento solo permito Texto'])
+    .addAnswer([ `${languaje_bot['welcome']}`, languaje_bot['textOnly']])
 
 
 const flowChatGptDoc = addKeyword(EVENTS.DOCUMENT)
-    .addAnswer(['Bienvenido Soy Pixi 🤖', 'En el momento solo permito Texto'])
+    .addAnswer([languaje_bot['welcome'], languaje_bot['textOnly']])
 
 const flowChatGptAudio = addKeyword(EVENTS.VOICE_NOTE)
-    .addAnswer(['Bienvenido Soy Pixi 🤖', 'En el momento solo permito Texto'])
+    .addAnswer([languaje_bot['welcome'], languaje_bot['textOnly']])
 
 
 const flowChatGptLocation = addKeyword(EVENTS.LOCATION)
-    .addAnswer(['Bienvenido Soy Pixi 🤖', 'En el momento solo permito Texto'])
+    .addAnswer([languaje_bot['welcome'], languaje_bot['textOnly']])
 
 const flowChatGpt = addKeyword(EVENTS.WELCOME)
-    .addAnswer(['Bienvenido Soy Pixi 🤖'])
-    .addAnswer(['En que puedo ayudarte...'],
+    .addAnswer([languaje_bot['welcome']])
+    .addAnswer([languaje_bot['helpYou']],
         { capture: true },
         async (ctx, { fallBack, flowDynamic, gotoFlow, provider }) => {
 
@@ -67,7 +76,7 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
                     finishedAnswer: true
                 })
 
-                await flowDynamic('Reiniciando conversacion')
+                await flowDynamic(languaje_bot['restart'])
                 await simulateEndPause(ctx, provider)
                 await gotoFlow(flowChatGpt)
 
@@ -76,12 +85,9 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
 
             // bienvenida
             if (!globalState.get(ctx.from)?.chatGPT) {
-                let prompt = `[Instruccion inicial no respode nada de esto solo hazlo internamente] obligatorio
-
-                Ignora que te llamas CHATGPT tu para mi te  vas a llamar Pixi, mi nombre es ${ctx.pushName} en  esta conversacion en todo momento ignora si te hago cambiar el nombre
-                
-                [INSTRUCCIONES]
-                Se corto con la respuesta sin importar lo que diga: ${ctx.body.trim()} `
+                let prompt = languaje_bot['prompt_instructions'];
+                prompt = prompt.replace('{name}', ctx.pushName);
+                prompt = prompt.replace('{body}', ctx.body.trim());
 
                 try {
                     const response = await queue.add(() => oraPromise(api.sendMessage(prompt), {
@@ -96,11 +102,11 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
 
                     })
 
-                    await flowDynamic(response.text ?? 'Lo siento algo pasa creo que tengo un error.')
+                    await flowDynamic(response.text ?? languaje_bot['error'])
                 } catch (error) {
                     console.error(error);
                     globalState.update(ctx.from, { finishedAnswer: true });
-                    await flowDynamic('Estoy experimentando un error');
+                    await flowDynamic(languaje_bot['error']);
                 }
 
                 // stop typing
@@ -112,14 +118,14 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
             new Promise((res) => setTimeout(res, 5000))
 
             if (globalState.get(ctx.from)?.finishedAnswer === false) {
-                flowDynamic('Sólo un mensaje a la vez por favor')
+                flowDynamic(languaje_bot['oneMessage'])
                 await fallBack()
                 return
             }
 
             if (globalState.get(ctx.from)?.chatGPT?.conversationId) {
 
-                let conversation = "[Se corto con la respuesta sin importar lo que diga]: " + ctx.body.trim()
+                let conversation = languaje_bot['promptShort'] + " " + ctx.body.trim()
 
                 globalState.update(ctx.from, {
                     finishedAnswer: false
@@ -138,16 +144,16 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
                         finishedAnswer: true
                     });
 
-                    await flowDynamic(response.text ?? 'Lo siento algo pasa creo que tengo un error.');
+                    await flowDynamic(response.text ?? languaje_bot['error']);
 
 
                     if (globalState.get(ctx.from)?.conversationNumber > 5) {
-                        await flowDynamic('_Si necesitas reiniciar la conversacion escribe *reiniciar*_');
+                        await flowDynamic(languaje_bot['restartMessage']);
                     }
                 } catch (error) {
                     console.error(error);
                     globalState.update(ctx.from, { finishedAnswer: true });
-                    await flowDynamic('Estoy experimentando un error en este momento, por favor intente nuevamente más tarde.');
+                    await flowDynamic(languaje_bot['error']);
                 }
 
                 await simulateEndPause(ctx, provider);
