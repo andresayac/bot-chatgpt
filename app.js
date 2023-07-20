@@ -16,10 +16,6 @@ import languajes from './languajes.js'
 
 const languaje_bot = languajes[process.env.LANGUAJE_BOT] ?? languajes['en']
 
-console.log(`Languaje bot: ${process.env.LANGUAJE_BOT}`)
-console.log(`Languaje bot: ${languaje_bot}`)
-console.log(`Languaje bot: ${languaje_bot['welcome']}`)
-
 const { createBot, createProvider, createFlow, addKeyword, EVENTS } = pkg
 
 const queue = new PQueue({ concurrency: 1 });
@@ -45,7 +41,7 @@ const api = new ChatGPTUnofficialProxyAPI({
 })
 
 const flowChatGptImage = addKeyword(EVENTS.MEDIA)
-    .addAnswer([ `${languaje_bot['welcome']}`, languaje_bot['textOnly']])
+    .addAnswer([`${languaje_bot['welcome']}`, languaje_bot['textOnly']])
 
 
 const flowChatGptDoc = addKeyword(EVENTS.DOCUMENT)
@@ -64,11 +60,11 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
         { capture: true },
         async (ctx, { fallBack, flowDynamic, gotoFlow, provider }) => {
 
-            // simular escribiendo
+            // simulate typing
             await simulateTyping(ctx, provider)
 
-            // reiniciar conversacion
-            if (ctx.body.toLowerCase().trim().includes('reiniciar')) {
+            // restart conversation
+            if (ctx.body.toLowerCase().trim().includes('reiniciar') || ctx.body.toLowerCase().trim().includes('restart')) {
                 globalState.update(ctx.from, {
                     name: ctx.pushName ?? ctx.from,
                     chatGPT: null,
@@ -83,7 +79,7 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
                 return
             }
 
-            // bienvenida
+            // welcome message
             if (!globalState.get(ctx.from)?.chatGPT) {
                 let prompt = languaje_bot['prompt_instructions'];
                 prompt = prompt.replace('{name}', ctx.pushName);
