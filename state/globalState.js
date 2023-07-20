@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 class GlobalState {
   constructor() {
     if (!GlobalState.instance) {
-      this._data = this.loadState(); // Carga el estado al iniciar la aplicación
+      this._data = this.loadState(); // Load the state when the application starts
       GlobalState.instance = this;
     }
 
@@ -12,7 +12,7 @@ class GlobalState {
 
   set(key, val) {
     this._data[key] = val;
-    this.saveState(); // Guarda el estado cada vez que se modifica
+    this.saveState(); // Save the state every time it is modified
   }
 
   get(key) {
@@ -25,21 +25,21 @@ class GlobalState {
     } else {
       this._data[key] = newVal;
     }
-    this.saveState(); // Guarda el estado cada vez que se modifica
+    this.saveState(); // Save the state every time it is modified
   }
 
-  // Guarda el estado en un archivo JSON
+  // Save the state to a JSON file
   saveState() {
     writeFileSync('state.json', JSON.stringify(this._data));
   }
 
-  // Carga el estado desde un archivo JSON
+  //Load the state from a JSON file
   loadState() {
     if (existsSync('state.json')) {
       const stateData = readFileSync('state.json');
       return JSON.parse(stateData);
     } else {
-      return {}; // Retorna un estado vacío si el archivo no existe
+      return {}; // Returns an empty state if the file does not exist
     }
   }
 }
