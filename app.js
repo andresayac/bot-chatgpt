@@ -81,7 +81,7 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
 
             // welcome message
             if (!globalState.get(ctx.from)?.chatGPT) {
-                let prompt = languaje_bot['prompt_instructions'];
+                let prompt = languaje_bot['promptInstructions'];
                 prompt = prompt.replace('{name}', ctx.pushName);
                 prompt = prompt.replace('{body}', ctx.body.trim());
 
