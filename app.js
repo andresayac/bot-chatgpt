@@ -143,7 +143,7 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
                     await flowDynamic(response.text ?? languaje_bot['error']);
 
 
-                    if (globalState.get(ctx.from)?.conversationNumber > 5) {
+                    if (globalState.get(ctx.from)?.conversationNumber % 5 === 0 && globalState.get(ctx.from)?.conversationNumber !== 0) {
                         await flowDynamic(languaje_bot['restartMessage']);
                     }
                 } catch (error) {
