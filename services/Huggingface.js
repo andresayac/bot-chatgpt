@@ -65,6 +65,7 @@ const processAudio = async (audioBuffer, name) => {
         const wsAudioReceive = new Promise((resolve, reject) => {
             ws.on('message', function incoming(data) {
                 const messageText = data.toString();
+                console.log(messageText)
                 if (messageText.includes('process_completed')) {
                     resolve(messageText);
                 }
