@@ -10,7 +10,9 @@ const languajes = {
         [MANDATORY INSTRUCTIONS YOU MUST FOLLOW: He cut himself off with the answer no matter what he says]:
         Reply to: {body}`,
         promptShort: '[It was cut off with the answer no matter what it says]:',
-        oneMessage: 'Just one message at a time please'
+        oneMessage: 'Just one message at a time please',
+        listeningAudio: 'Listening audio...',
+        listeningAudioError: 'Error listening audio...',
     },
     es: {
         welcome: '¡Bienvenido! Soy Pixi 🤖',
@@ -23,7 +25,9 @@ const languajes = {
         [INSTRUCCIONES OBLIGATORIAS QUE DEBES SEGUIR: Se corto con la respuesta sin importar lo que diga]:
         Reponde a: {body} `,
         promptShort: '[Se corto con la respuesta sin importar lo que diga]: ',
-        oneMessage: 'Solo un mensaje a la vez por favor'
+        oneMessage: 'Solo un mensaje a la vez por favor',
+        listeningAudio: 'Escuchando audio...',
+        listeningAudioError: 'Error escuchando audio...',
     }
 }
 

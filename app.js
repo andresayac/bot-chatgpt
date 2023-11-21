@@ -4,9 +4,14 @@ import JsonFileAdapter from '@bot-whatsapp/database/json'
 import { ChatGPTUnofficialProxyAPI } from 'chatgpt';
 import { oraPromise } from 'ora'
 import dotenv from 'dotenv-safe'
-import PQueue from 'p-queue';
+import PQueue from 'p-queue'
+import { processAudio } from './services/Huggingface.js';
+import { isAudio } from './utils/index.js'
+import { downloadMediaMessage } from '@whiskeysockets/baileys'
 
 dotenv.config()
+
+
 
 // import state global
 import globalState from './state/globalState.js'
@@ -19,6 +24,7 @@ const languaje_bot = languajes[process.env.LANGUAJE_BOT] ?? languajes['en']
 const { createBot, createProvider, createFlow, addKeyword, EVENTS } = pkg
 
 const queue = new PQueue({ concurrency: 1 });
+
 
 
 const simulateTyping = async (ctx, provider) => {
@@ -48,7 +54,9 @@ const flowChatGptDoc = addKeyword(EVENTS.DOCUMENT)
     .addAnswer([languaje_bot['welcome'], languaje_bot['textOnly']])
 
 const flowChatGptAudio = addKeyword(EVENTS.VOICE_NOTE)
-    .addAnswer([languaje_bot['welcome'], languaje_bot['textOnly']])
+    .addAction(async (ctx, { fallBack, flowDynamic, gotoFlow, provider }) => {
+        gotoFlow(flowChatGpt)
+    })
 
 
 const flowChatGptLocation = addKeyword(EVENTS.LOCATION)
@@ -59,7 +67,19 @@ const flowChatGpt = addKeyword(EVENTS.WELCOME)
     .addAnswer([languaje_bot['helpYou']],
         { capture: true },
         async (ctx, { fallBack, flowDynamic, gotoFlow, provider }) => {
-
+            if (isAudio(ctx)) {
+                // process audio
+                await flowDynamic(languaje_bot['listeningAudio']);
+                const buffer = await downloadMediaMessage(ctx, 'buffer')
+                const response = await processAudio(buffer, ctx.key.id + '.ogg')
+                if (response.success) {
+                    ctx.body = response.output.data[0]
+                }else{
+                    await flowDynamic(languaje_bot['listeningAudioError']);
+                    await fallBack()
+                    return
+                }
+            }
             // simulate typing
             await simulateTyping(ctx, provider)
 
